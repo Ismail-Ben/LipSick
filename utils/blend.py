@@ -49,15 +49,22 @@ def extract_frames_from_video(video_path, save_dir):
         cv2.imwrite(result_path, frame)
     return (int(videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-def load_landmark_dlib(image_path):
+def load_landmark_dlib(image_path, previous_landmarks=None):
     img = cv2.imread(image_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_detector(gray)
+    
     if not faces:
-        raise ValueError("No faces found in the image.")
+        if previous_landmarks is None:
+            print(image_path)
+            raise ValueError("No faces found in the image and no previous landmarks available.")
+        print(f"No faces found in {image_path}, using landmarks from previous frame.")
+        return previous_landmarks
+
     shape = landmark_predictor(gray, faces[0])
     landmarks = np.array([[p.x, p.y] for p in shape.parts()])
     return landmarks
+
 
 def alpha_blend_face(original_frame, generated_frame, landmarks):
     mask = np.zeros(original_frame.shape[:2], dtype=np.float32)
@@ -80,7 +87,18 @@ def blend_videos(same_length_dir, pre_blend_dir, samelength_path, pre_blend_path
 
     pre_blend_frame_path_list = glob.glob(os.path.join(pre_blend_dir, '*.jpg'))
     pre_blend_frame_path_list.sort()
-    pre_blend_landmark_data = np.array([load_landmark_dlib(frame) for frame in pre_blend_frame_path_list])
+
+    previous_landmarks = None
+    pre_blend_landmark_data = []
+
+    for frame in pre_blend_frame_path_list:
+        landmarks = load_landmark_dlib(frame, previous_landmarks)
+        pre_blend_landmark_data.append(landmarks)
+        previous_landmarks = landmarks  # Update previous landmarks
+
+    pre_blend_landmark_data = np.array(pre_blend_landmark_data)
+
+    #pre_blend_landmark_data = np.array([load_landmark_dlib(frame) for frame in pre_blend_frame_path_list])
 
     # Blend frames from pre_blend video onto samelength video using Alpha blending
     output_video_path = samelength_path.replace('samelength.mp4', '_lipsick_blend.mp4')
