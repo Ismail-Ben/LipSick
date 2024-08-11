@@ -173,7 +173,7 @@ def main():
         sys.stdout.write(f'\rSynthesizing {clip_end_index - 5}/{pad_length - 5} frame')
         sys.stdout.flush()
 
-        crop_flag, crop_radius = (True, compute_crop_radius(video_size, res_video_landmark_data_pad[clip_end_index - 5:clip_end_index, :, :])) if not crop_flag else (False, crop_radius)
+        crop_flag, crop_radius = (True, compute_crop_radius(video_size, res_video_landmark_data_pad[clip_end_index - 5:clip_end_index, :, :])[1]) if not crop_flag else (False, crop_radius)
         
         crop_radius_1_4 = crop_radius // 4
         frame_data = cv2.imread(res_video_frame_path_list_pad[clip_end_index - 3])[:, :, ::-1]
